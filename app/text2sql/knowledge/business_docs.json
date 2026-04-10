@@ -1,0 +1,66 @@
+[
+  {
+    "title": "sys_static 字典表使用规则",
+    "content": "sys_static 是通用字典表。结构：code(字典类型), value(编码值), label(显示文字)。关联方式固定为：JOIN sys_static AS s ON s.value = 源表.字段 AND s.code = '字典类型' AND s.is_deleted = 0。注意 value 字段是 varchar 类型，关联时 MySQL 会自动类型转换。绝对不要用 s.id 做关联，必须用 s.value。"
+  },
+  {
+    "title": "gb_company_scale 公司规模字典",
+    "content": "gb_company.scale 字段存储公司规模编码（tinyint），需关联 sys_static(code='gb_company_scale') 翻译为文字。取值：1=20人以下, 2=20-99人, 3=100-499人, 4=500-999人, 5=1000-9999人, 6=10000人以上。查询规模时用 JOIN sys_static s ON s.value = c.scale AND s.code = 'gb_company_scale' AND s.is_deleted = 0。"
+  },
+  {
+    "title": "gb_company_type 公司性质字典",
+    "content": "gb_company.type 字段存储公司性质编码，需关联 sys_static(code='gb_company_type') 翻译。取值：1=民营, 2=外资, 3=合资, 4=国营, 5=上市公司, 6=合资公司, 7=事业/事业单位。"
+  },
+  {
+    "title": "gb_company_stage 发展阶段字典",
+    "content": "gb_company.stage 字段存储发展阶段编码，需关联 sys_static(code='gb_company_stage') 翻译。取值：1=初创/天使轮, 3=A轮, 4=B轮, 5=C轮, 6=D轮及以上, 8=不需要融资。"
+  },
+  {
+    "title": "gb_industry 行业类别字典",
+    "content": "行业类别存储在 gb_company_industry.industry_id 字段，一家公司可有多个行业（一对多关系）。翻译方式：JOIN sys_static s ON s.value = ci.industry_id AND s.code = 'gb_industry' AND s.is_deleted = 0。查询公司行业时需 GROUP BY 公司主键，行业用 GROUP_CONCAT(DISTINCT s.label) 聚合。"
+  },
+  {
+    "title": "gb_education 学历字典",
+    "content": "学历编码在多个表中使用（gb_profile_basic.education, gb_jd.education）。需关联 sys_static 翻译。gb_profile_basic 用 code='gb_education'，gb_jd 用 code='gb_jd_education'。取值：-1=其他, 1=初中, 2=高中, 3=中专, 4=大专, 5=本科, 6=硕士, 7=博士, 8=博士后。"
+  },
+  {
+    "title": "gb_sex 性别字典",
+    "content": "性别编码：gb_profile_basic.sex 字段。关联 sys_static(code='gb_sex')。取值：1=男, 2=女。"
+  },
+  {
+    "title": "时间字段处理规则",
+    "content": "数据库中大部分时间字段（add_time, update_time）使用 int(10) 存储 Unix 时间戳。查询时用 FROM_UNIXTIME(字段) 转换为可读日期。时间范围查询用 UNIX_TIMESTAMP() 函数，例如：add_time >= UNIX_TIMESTAMP('2024-01-01') 或 add_time >= UNIX_TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))。少部分表使用 datetime 类型，可直接比较。"
+  },
+  {
+    "title": "软删除规则",
+    "content": "几乎所有业务表都有 is_deleted 字段（0=未删除, 1=已删除）。所有查询必须加 is_deleted = 0 条件。JOIN 时每张表都要加，不能只在主表加。"
+  },
+  {
+    "title": "WHERE 条件原则",
+    "content": "除了 is_deleted = 0 是所有查询必加的默认条件外，其他字段（status, is_open, is_show, is_recommend, is_new, is_virtual 等）只有在用户问题明确涉及时才添加。不要自行猜测或添加用户未提及的过滤条件。例如用户问'查询最新10家公司'，只需加 is_deleted = 0，不需要加 status = 1 或 is_virtual = 0。"
+  },
+  {
+    "title": "一对多 JOIN 去重规则",
+    "content": "当主表与子表是一对多关系时（如一个公司有多个行业、一个职位有多个地址），如果用户要求按主表实体列表查询，必须用 GROUP BY 主表主键。子表的多个值用 GROUP_CONCAT(DISTINCT ...) 聚合为一行。如果不加 GROUP BY，一个公司有3个行业就会出现3行，导致 LIMIT 10 实际只返回不到10家公司。"
+  },
+  {
+    "title": "gb_company 公司主表说明",
+    "content": "gb_company 是公司/企业的主表，存储所有公司基本信息。gb_market_company 是营销统计表，gb_company_audit 是审核表，sys_company 是搜索表。查询公司信息时应使用 gb_company 作为主表。"
+  },
+  {
+    "title": "gb_jd 职位主表说明",
+    "content": "gb_jd 是职位的主表。status 字段：1=在线, 2=暂停, 3=关闭。查询在线职位用 status = 1。职位通过 company_id 关联 gb_company。职位地址在 gb_jd_address（一对多），福利在 gb_jd_benefit（一对多）。"
+  },
+  {
+    "title": "gb_profile_basic 候选人主表说明",
+    "content": "gb_profile_basic 是候选人/简历的主表。教育经历在 gb_profile_edu，工作经历在 gb_profile_job，求职意向在 gb_profile_intent，技能在 gb_profile_skill。这些子表都通过 profile_id 关联主表。"
+  },
+  {
+    "title": "gb_jd_profile 投递记录说明",
+    "content": "gb_jd_profile 记录候选人的投递/应聘信息。通过 jd_id 关联职位，profile_id 关联候选人，company_id 关联公司。status 字段表示投递流程状态（如待处理、已查看、面试、入职等）。status = 5 通常表示已入职。"
+  },
+  {
+    "title": "sys_city 城市表说明",
+    "content": "sys_city 是城市字典表，包含省、市、区三级。层级关系：p_id = 0 为省份，p_id = 省份id 为城市，p_id = 城市id 为区县。关联方式：JOIN sys_city ON sys_city.id = 源表.city_id。按城市名查询用 name LIKE '%北京%'。"
+  }
+]

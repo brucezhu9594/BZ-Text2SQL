@@ -1,0 +1,102 @@
+[
+  {
+    "question": "查询最新入驻的10家公司的名称和行业",
+    "sql": "SELECT c.name AS 公司名称, GROUP_CONCAT(DISTINCT s.label) AS 行业\nFROM gb_company c\nLEFT JOIN gb_company_industry ci ON ci.company_id = c.id AND ci.is_deleted = 0\nLEFT JOIN sys_static s ON s.value = ci.industry_id AND s.code = 'gb_industry' AND s.is_deleted = 0\nWHERE c.is_deleted = 0\nGROUP BY c.id, c.name\nORDER BY c.add_time DESC\nLIMIT 10"
+  },
+  {
+    "question": "查询公司规模为500人以上的公司有哪些",
+    "sql": "SELECT c.name AS 公司名称, ss.label AS 规模\nFROM gb_company c\nJOIN sys_static ss ON ss.value = c.scale AND ss.code = 'gb_company_scale' AND ss.is_deleted = 0\nWHERE c.is_deleted = 0 AND c.scale IN (4, 5, 6)\nORDER BY c.scale DESC\nLIMIT 50"
+  },
+  {
+    "question": "每个行业有多少家公司",
+    "sql": "SELECT s.label AS 行业, COUNT(DISTINCT ci.company_id) AS 公司数量\nFROM gb_company_industry ci\nJOIN sys_static s ON s.value = ci.industry_id AND s.code = 'gb_industry' AND s.is_deleted = 0\nJOIN gb_company c ON c.id = ci.company_id AND c.is_deleted = 0\nWHERE ci.is_deleted = 0\nGROUP BY s.label\nORDER BY 公司数量 DESC\nLIMIT 50"
+  },
+  {
+    "question": "查询北京的公司列表",
+    "sql": "SELECT c.name AS 公司名称, city.name AS 城市\nFROM gb_company c\nJOIN sys_city city ON city.id = c.city_id\nWHERE c.is_deleted = 0 AND city.name LIKE '%北京%'\nLIMIT 50"
+  },
+  {
+    "question": "最近一个月发布了多少个职位",
+    "sql": "SELECT COUNT(*) AS 职位数量\nFROM gb_jd\nWHERE is_deleted = 0 AND add_time >= UNIX_TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))\nLIMIT 1"
+  },
+  {
+    "question": "查询在线职位数量最多的前10家公司",
+    "sql": "SELECT c.name AS 公司名称, COUNT(j.id) AS 在线职位数\nFROM gb_jd j\nJOIN gb_company c ON c.id = j.company_id AND c.is_deleted = 0\nWHERE j.is_deleted = 0 AND j.status = 1\nGROUP BY c.id, c.name\nORDER BY 在线职位数 DESC\nLIMIT 10"
+  },
+  {
+    "question": "查询要求本科学历的职位有哪些",
+    "sql": "SELECT j.name AS 职位名称, c.name AS 公司名称, se.label AS 学历要求\nFROM gb_jd j\nJOIN gb_company c ON c.id = j.company_id AND c.is_deleted = 0\nJOIN sys_static se ON se.value = j.education AND se.code = 'gb_jd_education' AND se.is_deleted = 0\nWHERE j.is_deleted = 0 AND j.education = 5\nLIMIT 50"
+  },
+  {
+    "question": "查询每个城市有多少个在线职位",
+    "sql": "SELECT city.name AS 城市, COUNT(j.id) AS 职位数量\nFROM gb_jd j\nJOIN gb_jd_address ja ON ja.jd_id = j.id AND ja.is_deleted = 0\nJOIN sys_city city ON city.id = ja.city_id\nWHERE j.is_deleted = 0 AND j.status = 1\nGROUP BY city.id, city.name\nORDER BY 职位数量 DESC\nLIMIT 50"
+  },
+  {
+    "question": "查询投递量最多的前10个职位",
+    "sql": "SELECT j.name AS 职位名称, c.name AS 公司名称, COUNT(jp.id) AS 投递量\nFROM gb_jd_profile jp\nJOIN gb_jd j ON j.id = jp.jd_id AND j.is_deleted = 0\nJOIN gb_company c ON c.id = j.company_id AND c.is_deleted = 0\nWHERE jp.is_deleted = 0\nGROUP BY j.id, j.name, c.name\nORDER BY 投递量 DESC\nLIMIT 10"
+  },
+  {
+    "question": "查询最近注册的10个候选人的姓名、性别和学历",
+    "sql": "SELECT pb.name AS 姓名, s1.label AS 性别, s2.label AS 学历\nFROM gb_profile_basic pb\nLEFT JOIN sys_static s1 ON s1.value = pb.sex AND s1.code = 'gb_sex' AND s1.is_deleted = 0\nLEFT JOIN sys_static s2 ON s2.value = pb.education AND s2.code = 'gb_education' AND s2.is_deleted = 0\nWHERE pb.is_deleted = 0\nORDER BY pb.add_time DESC\nLIMIT 10"
+  },
+  {
+    "question": "统计各学历的候选人数量",
+    "sql": "SELECT s.label AS 学历, COUNT(pb.id) AS 候选人数量\nFROM gb_profile_basic pb\nJOIN sys_static s ON s.value = pb.education AND s.code = 'gb_education' AND s.is_deleted = 0\nWHERE pb.is_deleted = 0\nGROUP BY s.label\nORDER BY 候选人数量 DESC\nLIMIT 50"
+  },
+  {
+    "question": "查询有多少家民营企业",
+    "sql": "SELECT COUNT(*) AS 民营企业数量\nFROM gb_company c\nWHERE c.is_deleted = 0 AND c.type = 1\nLIMIT 1"
+  },
+  {
+    "question": "查询各公司性质的公司数量",
+    "sql": "SELECT s.label AS 公司性质, COUNT(c.id) AS 公司数量\nFROM gb_company c\nJOIN sys_static s ON s.value = c.type AND s.code = 'gb_company_type' AND s.is_deleted = 0\nWHERE c.is_deleted = 0\nGROUP BY s.label\nORDER BY 公司数量 DESC\nLIMIT 50"
+  },
+  {
+    "question": "查询薪资最高的10个职位",
+    "sql": "SELECT j.name AS 职位名称, c.name AS 公司名称, j.salary_low AS 最低薪资, j.salary_high AS 最高薪资\nFROM gb_jd j\nJOIN gb_company c ON c.id = j.company_id AND c.is_deleted = 0\nWHERE j.is_deleted = 0 AND j.status = 1\nORDER BY j.salary_high DESC\nLIMIT 10"
+  },
+  {
+    "question": "查询某家公司发布了哪些职位",
+    "sql": "SELECT j.name AS 职位名称, FROM_UNIXTIME(j.add_time) AS 发布时间\nFROM gb_jd j\nJOIN gb_company c ON c.id = j.company_id AND c.is_deleted = 0\nWHERE j.is_deleted = 0 AND c.name LIKE '%公司名称%'\nORDER BY j.add_time DESC\nLIMIT 50"
+  },
+  {
+    "question": "最近一周有多少候选人投递了简历",
+    "sql": "SELECT COUNT(DISTINCT jp.profile_id) AS 投递候选人数\nFROM gb_jd_profile jp\nWHERE jp.is_deleted = 0 AND jp.add_time >= UNIX_TIMESTAMP(DATE_SUB(CURDATE(), INTERVAL 7 DAY))\nLIMIT 1"
+  },
+  {
+    "question": "查询公开展示的公司有哪些",
+    "sql": "SELECT c.name AS 公司名称\nFROM gb_company c\nWHERE c.is_deleted = 0 AND c.is_open = 1 AND c.is_show = 1\nLIMIT 50"
+  },
+  {
+    "question": "查询处于A轮融资阶段的公司",
+    "sql": "SELECT c.name AS 公司名称, s.label AS 发展阶段\nFROM gb_company c\nJOIN sys_static s ON s.value = c.stage AND s.code = 'gb_company_stage' AND s.is_deleted = 0\nWHERE c.is_deleted = 0 AND c.stage = 3\nLIMIT 50"
+  },
+  {
+    "question": "统计每个月新增的公司数量",
+    "sql": "SELECT DATE_FORMAT(FROM_UNIXTIME(add_time), '%Y-%m') AS 月份, COUNT(*) AS 新增公司数\nFROM gb_company\nWHERE is_deleted = 0 AND add_time > 0\nGROUP BY 月份\nORDER BY 月份 DESC\nLIMIT 24"
+  },
+  {
+    "question": "查询有工作经验要求3年以上的职位",
+    "sql": "SELECT j.name AS 职位名称, c.name AS 公司名称, j.work_time_low AS 最低工作年限\nFROM gb_jd j\nJOIN gb_company c ON c.id = j.company_id AND c.is_deleted = 0\nWHERE j.is_deleted = 0 AND j.work_time_low >= 3\nLIMIT 50"
+  },
+  {
+    "question": "查询库里一共有多少家公司",
+    "sql": "SELECT COUNT(*) AS 公司总数\nFROM gb_company\nWHERE is_deleted = 0\nLIMIT 1"
+  },
+  {
+    "question": "哪些公司没有发布过职位",
+    "sql": "SELECT c.name AS 公司名称, FROM_UNIXTIME(c.add_time) AS 入驻时间\nFROM gb_company c\nLEFT JOIN gb_jd j ON j.company_id = c.id AND j.is_deleted = 0\nWHERE c.is_deleted = 0 AND j.id IS NULL\nLIMIT 50"
+  },
+  {
+    "question": "查询各发展阶段的公司数量分布",
+    "sql": "SELECT s.label AS 发展阶段, COUNT(c.id) AS 公司数量\nFROM gb_company c\nJOIN sys_static s ON s.value = c.stage AND s.code = 'gb_company_stage' AND s.is_deleted = 0\nWHERE c.is_deleted = 0\nGROUP BY s.label\nORDER BY 公司数量 DESC\nLIMIT 50"
+  },
+  {
+    "question": "查询最近入职的候选人",
+    "sql": "SELECT pb.name AS 姓名, j.name AS 职位, c.name AS 公司, FROM_UNIXTIME(jp.update_time) AS 入职时间\nFROM gb_jd_profile jp\nJOIN gb_profile_basic pb ON pb.id = jp.profile_id AND pb.is_deleted = 0\nJOIN gb_jd j ON j.id = jp.jd_id AND j.is_deleted = 0\nJOIN gb_company c ON c.id = jp.company_id AND c.is_deleted = 0\nWHERE jp.is_deleted = 0 AND jp.status = 5\nORDER BY jp.update_time DESC\nLIMIT 10"
+  },
+  {
+    "question": "查询推荐展示的公司列表",
+    "sql": "SELECT c.name AS 公司名称\nFROM gb_company c\nWHERE c.is_deleted = 0 AND c.is_recommend = 1\nLIMIT 50"
+  }
+]

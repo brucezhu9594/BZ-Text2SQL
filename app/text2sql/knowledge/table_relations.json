@@ -1,0 +1,74 @@
+[
+  {
+    "title": "gb_company 与 gb_company_industry 的关系",
+    "content": "gb_company 与 gb_company_industry 是一对多关系（一个公司可属于多个行业）。JOIN 条件：gb_company_industry.company_id = gb_company.id。查询公司行业列表时必须 GROUP BY gb_company.id，行业用 GROUP_CONCAT(DISTINCT s.label) 聚合。行业需再关联 sys_static(code='gb_industry') 翻译。"
+  },
+  {
+    "title": "gb_company.scale 关联字典",
+    "content": "gb_company.scale 是公司规模编码。关联方式：JOIN sys_static s ON s.value = gb_company.scale AND s.code = 'gb_company_scale' AND s.is_deleted = 0。用 s.label 获取规模文字描述。"
+  },
+  {
+    "title": "gb_company.type 关联字典",
+    "content": "gb_company.type 是公司性质编码。关联方式：JOIN sys_static s ON s.value = gb_company.type AND s.code = 'gb_company_type' AND s.is_deleted = 0。用 s.label 获取性质文字描述。"
+  },
+  {
+    "title": "gb_company.stage 关联字典",
+    "content": "gb_company.stage 是发展阶段编码。关联方式：JOIN sys_static s ON s.value = gb_company.stage AND s.code = 'gb_company_stage' AND s.is_deleted = 0。用 s.label 获取阶段文字描述。"
+  },
+  {
+    "title": "gb_company.city_id 关联城市",
+    "content": "gb_company.city_id 关联城市表。JOIN 条件：JOIN sys_city ON sys_city.id = gb_company.city_id。用 sys_city.name 获取城市名称。"
+  },
+  {
+    "title": "gb_jd 与 gb_company 的关系",
+    "content": "gb_jd 通过 company_id 关联 gb_company。JOIN 条件：JOIN gb_company c ON c.id = gb_jd.company_id AND c.is_deleted = 0。每个职位属于一家公司。"
+  },
+  {
+    "title": "gb_jd 与 gb_jd_address 的关系",
+    "content": "gb_jd 与 gb_jd_address 是一对多关系（一个职位可有多个工作地址）。JOIN 条件：JOIN gb_jd_address ja ON ja.jd_id = gb_jd.id AND ja.is_deleted = 0。地址中的 city_id 关联 sys_city。"
+  },
+  {
+    "title": "gb_jd 与 gb_jd_benefit 的关系",
+    "content": "gb_jd 与 gb_jd_benefit 是一对多关系（一个职位可有多个福利标签）。JOIN 条件：JOIN gb_jd_benefit jb ON jb.jd_id = gb_jd.id AND jb.is_deleted = 0。"
+  },
+  {
+    "title": "gb_jd.education 关联字典",
+    "content": "gb_jd.education 是学历要求编码。关联方式：JOIN sys_static s ON s.value = gb_jd.education AND s.code = 'gb_jd_education' AND s.is_deleted = 0。注意职位学历的 code 是 'gb_jd_education'，不是 'gb_education'。"
+  },
+  {
+    "title": "gb_jd.type 关联字典",
+    "content": "gb_jd.type 是职位类型编码。关联方式：JOIN sys_static s ON s.value = gb_jd.type AND s.code = 'gb_jd_type' AND s.is_deleted = 0。"
+  },
+  {
+    "title": "gb_profile_basic 与 gb_profile_edu 的关系",
+    "content": "gb_profile_basic 与 gb_profile_edu 是一对多关系（一个候选人可有多段教育经历）。JOIN 条件：JOIN gb_profile_edu pe ON pe.profile_id = gb_profile_basic.id AND pe.is_deleted = 0。"
+  },
+  {
+    "title": "gb_profile_basic 与 gb_profile_job 的关系",
+    "content": "gb_profile_basic 与 gb_profile_job 是一对多关系（一个候选人可有多段工作经历）。JOIN 条件：JOIN gb_profile_job pj ON pj.profile_id = gb_profile_basic.id AND pj.is_deleted = 0。"
+  },
+  {
+    "title": "gb_profile_basic 与 gb_profile_intent 的关系",
+    "content": "gb_profile_basic 与 gb_profile_intent 是一对多关系（求职意向）。JOIN 条件：JOIN gb_profile_intent pi ON pi.profile_id = gb_profile_basic.id AND pi.is_deleted = 0。"
+  },
+  {
+    "title": "gb_profile_basic.sex 关联字典",
+    "content": "gb_profile_basic.sex 是性别编码。关联方式：JOIN sys_static s ON s.value = gb_profile_basic.sex AND s.code = 'gb_sex' AND s.is_deleted = 0。"
+  },
+  {
+    "title": "gb_profile_basic.education 关联字典",
+    "content": "gb_profile_basic.education 是最高学历编码。关联方式：JOIN sys_static s ON s.value = gb_profile_basic.education AND s.code = 'gb_education' AND s.is_deleted = 0。注意候选人学历的 code 是 'gb_education'，职位学历是 'gb_jd_education'。"
+  },
+  {
+    "title": "gb_jd_profile 的多表关联",
+    "content": "gb_jd_profile 是投递/应聘记录表，关联三张主表。JOIN gb_jd ON gb_jd.id = gb_jd_profile.jd_id（关联职位）。JOIN gb_profile_basic ON gb_profile_basic.id = gb_jd_profile.profile_id（关联候选人）。JOIN gb_company ON gb_company.id = gb_jd_profile.company_id（关联公司）。"
+  },
+  {
+    "title": "gb_user_hh 与 gb_company 的关系",
+    "content": "gb_user_hh（B端HR用户）通过 gb_user_company 关联公司。路径：gb_user_hh → gb_user_company(user_id = gb_user_hh.id) → gb_company(id = gb_user_company.company_id)。"
+  },
+  {
+    "title": "sys_city 城市表层级关系",
+    "content": "sys_city 是三级城市字典：p_id = 0 为省份，p_id = 省份id 为城市，p_id = 城市id 为区县。查省份：WHERE p_id = 0。查某省的城市：WHERE p_id = 省份id。关联业务表用 JOIN sys_city ON sys_city.id = 源表.city_id。"
+  }
+]
