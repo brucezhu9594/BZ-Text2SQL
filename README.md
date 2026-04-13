@@ -47,6 +47,8 @@ BZ-Text2SQL/
 |-- .env                          # 环境变量 (LLM / Embedding / MySQL 配置)
 |-- requirements.txt              # Python 依赖
 |-- app/
+    |-- milvus/
+    |   |-- docker-compose.yml    # Milvus 容器编排 (含 etcd + MinIO + Attu)
     |-- text2sql/
         |-- agent.py              # 主流程 (4 步编排 + 结果格式化)
         |-- prompts.py            # 3 套 Prompt 模板 (表选择/SQL生成/SQL修正)
@@ -93,7 +95,21 @@ MYSQL_DATABASE=retail_2_0
 
 ### 3. 启动 Milvus
 
-确保 Milvus 服务运行在 `localhost:19530`。
+```bash
+cd app/milvus
+docker-compose up -d
+```
+
+包含以下服务：
+
+| 服务 | 端口 | 说明 |
+|------|------|------|
+| Milvus Standalone | 19530 | 向量数据库 (v2.5.8) |
+| Attu | 3000 | Milvus 可视化管理界面 |
+| MinIO | 9000 / 9001 | 对象存储 (Milvus 底层依赖) |
+| etcd | 2379 | 元数据存储 (Milvus 底层依赖) |
+
+启动后访问 `http://localhost:3000` 可打开 Attu 管理界面查看 collection 数据。
 
 ### 4. 构建知识库 (首次运行)
 
