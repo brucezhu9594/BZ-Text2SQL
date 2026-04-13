@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from langchain_community.embeddings import ZhipuAIEmbeddings
 from pymilvus import MilvusClient, DataType
 
-from app.text2sql.sql_executor import get_all_tables, get_table_schema
+from app.sql_executor import get_all_tables, get_table_schema
 
 load_dotenv()
 

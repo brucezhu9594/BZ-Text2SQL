@@ -1,7 +1,6 @@
 """构建 4 路向量知识库：DDL Schema + Few-shot 示例 + 业务文档 + 表关系。"""
 
 import json
-import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -128,7 +127,7 @@ def build_all():
     # 构建 DDL Schema 知识库（复用原有逻辑）
     print("=" * 50)
     print("构建 DDL Schema 知识库...")
-    from app.text2sql.schema_build import build as build_schema
+    from app.schema_build import build as build_schema
     build_schema()
 
     # 构建 Few-shot / 业务文档 / 表关系 三个知识库

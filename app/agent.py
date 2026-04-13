@@ -7,15 +7,14 @@ import time
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 
-from app.text2sql.prompts import (
+from app.prompts import (
     SQL_GENERATION_PROMPT,
     SQL_FIX_PROMPT,
-    RESULT_INTERPRETATION_PROMPT,
 )
-from app.text2sql.knowledge_retriever import retrieve_all
-from app.text2sql.schema_retriever import build_schema
-from app.text2sql.sql_validator import validate_sql
-from app.text2sql.sql_executor import execute_sql
+from app.knowledge_retriever import retrieve_all
+from app.schema_retriever import build_schema
+from app.sql_validator import validate_sql
+from app.sql_executor import execute_sql
 
 load_dotenv()
 MODEL = os.environ["MODEL_ID"]
@@ -81,25 +80,34 @@ def _fix_sql(question: str, schema: str, examples: str,
     return _clean_llm_output(resp.content or "")
 
 
-def _interpret_result(question: str, sql: str, rows: list[dict], columns: list[str]) -> str:
-    """LLM 将查询结果转为自然语言回答。"""
+def _format_result(rows: list[dict], columns: list[str]) -> str:
+    """将查询结果格式化为表格文本，原样返回所有数据。"""
     if not rows:
-        result_text = "查询结果为空，没有匹配的数据。"
-    else:
-        header = " | ".join(columns)
-        lines = [header, "-" * len(header)]
-        for row in rows[:30]:
-            line = " | ".join(str(row.get(c, "") or "") for c in columns)
-            lines.append(line)
-        result_text = "\n".join(lines)
-        print(f"  查询到 {len(rows)} 行结果")
+        return "查询结果为空，没有匹配的数据。"
 
-    llm = ChatOpenAI(model=MODEL, temperature=0)
-    prompt = RESULT_INTERPRETATION_PROMPT.format(
-        question=question, sql=sql, result=result_text
-    )
-    resp = llm.invoke(prompt)
-    return _clean_llm_output(resp.content or "")
+    # 计算每列最大宽度（考虑中文字符占 2 个宽度）
+    def _display_width(s: str) -> int:
+        w = 0
+        for c in s:
+            w += 2 if '\u4e00' <= c <= '\u9fff' or '\u3000' <= c <= '\u303f' else 1
+        return w
+
+    def _pad(s: str, width: int) -> str:
+        return s + " " * (width - _display_width(s))
+
+    str_rows = []
+    for row in rows:
+        str_rows.append([str(row.get(c, "") or "") for c in columns])
+
+    col_widths = [max(_display_width(c), *((_display_width(r[i]) for r in str_rows))) for i, c in enumerate(columns)]
+
+    header = " | ".join(_pad(c, col_widths[i]) for i, c in enumerate(columns))
+    separator = "-+-".join("-" * w for w in col_widths)
+    lines = [header, separator]
+    for r in str_rows:
+        lines.append(" | ".join(_pad(r[i], col_widths[i]) for i in range(len(columns))))
+
+    return f"共 {len(rows)} 条结果:\n\n" + "\n".join(lines)
 
 
 def run(question: str) -> str:
@@ -165,11 +173,9 @@ def run(question: str) -> str:
         return f"SQL 执行失败，已重试 {MAX_RETRIES} 次。最后错误：{last_error}"
     print(f"  耗时: {time.time() - t0:.2f}s")
 
-    # 第 5 步：结果解读
-    print("[5/5] 解读结果...")
-    t0 = time.time()
-    answer = _interpret_result(question, sql, rows, columns)
-    print(f"  耗时: {time.time() - t0:.2f}s")
+    # 第 5 步：格式化结果
+    print("[5/5] 格式化结果...")
+    answer = _format_result(rows, columns)
 
     print(f"\n总耗时: {time.time() - total_start:.2f}s")
     return answer

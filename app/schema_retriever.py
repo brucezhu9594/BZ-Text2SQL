@@ -6,8 +6,8 @@ import re
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 
-from app.text2sql.prompts import TABLE_SELECTION_PROMPT
-from app.text2sql.sql_executor import get_table_schema
+from app.prompts import TABLE_SELECTION_PROMPT
+from app.sql_executor import get_table_schema
 
 load_dotenv()
 MODEL = os.environ["MODEL_ID"]
